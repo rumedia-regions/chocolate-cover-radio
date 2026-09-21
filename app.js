@@ -146,6 +146,7 @@ function initApp() {
 /* ---------- RPC: GitHub frontend -> hidden Apps Script bridge ---------- */
 var RPC_BRIDGE = {
     frame: null,
+    targetWindow: null,
     channel: '',
     ready: false,
     readyPromise: null,
@@ -193,17 +194,19 @@ function bindBridgeMessages() {
     RPC_BRIDGE.listenerBound = true;
 
     window.addEventListener('message', function (event) {
-        if (!RPC_BRIDGE.frame || event.source !== RPC_BRIDGE.frame.contentWindow) {
-            return;
-        }
-
         var data = event.data;
+
         if (!data || data.channel !== RPC_BRIDGE.channel) {
             return;
         }
 
         if (data.type === 'ccr-bridge-ready') {
+            // Apps Script HTML runs inside Google's own sandbox iframe.
+            // event.source is therefore the inner Bridge window, not the
+            // outer iframe element that we created on GitHub.
+            RPC_BRIDGE.targetWindow = event.source;
             RPC_BRIDGE.ready = true;
+
             if (RPC_BRIDGE.readyResolve) {
                 RPC_BRIDGE.readyResolve(true);
                 RPC_BRIDGE.readyResolve = null;
@@ -212,7 +215,12 @@ function bindBridgeMessages() {
             return;
         }
 
-        if (data.type !== 'ccr-rpc-response' || !data.requestId) {
+        if (
+            data.type !== 'ccr-rpc-response' ||
+            !data.requestId ||
+            !RPC_BRIDGE.targetWindow ||
+            event.source !== RPC_BRIDGE.targetWindow
+        ) {
             return;
         }
 
@@ -311,7 +319,14 @@ function rpc(functionName) {
                 timer: timer
             });
 
-            RPC_BRIDGE.frame.contentWindow.postMessage({
+            if (!RPC_BRIDGE.targetWindow) {
+                clearTimeout(timer);
+                RPC_BRIDGE.requests.delete(requestId);
+                reject(new Error('Служебное подключение к серверу не готово.'));
+                return;
+            }
+
+            RPC_BRIDGE.targetWindow.postMessage({
                 type: 'ccr-rpc-request',
                 channel: RPC_BRIDGE.channel,
                 requestId: requestId,
