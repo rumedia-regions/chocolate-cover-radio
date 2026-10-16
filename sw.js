@@ -1,10 +1,10 @@
-const CACHE_NAME = 'chocolate-cover-radio-v6';
+const CACHE_NAME = 'chocolate-cover-radio-v7';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css?v=6',
-  './app.js?v=5',
+  './app.js?v=6',
   './manifest.webmanifest',
   './apple-touch-icon.png',
   './icon-192.png',
