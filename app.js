@@ -63,7 +63,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 var SESSION_STORAGE_KEY = 'ccr_session_token';
 var LAUNCH_SAVE_DELAY = 700;
 var CHECKLIST_SAVE_DELAY = 350;
-var APP_VERSION = '2.2.0-github';
+var APP_VERSION = '2.3.0-github';
 var APP_VERSION_STORAGE_KEY = 'ccr_app_version_seen';
 var INSTALL_HINT_STORAGE_KEY = 'ccr_install_hint_shown';
 var APP = {
@@ -1157,8 +1157,7 @@ function renderCheckItem(item) {
 function renderCheckStream() { return 'Основной поток работает, «Сторож» подключён и готов подхватить эфир.'; }
 function renderCheckAssets() { return 'Влёт, открывашка и вылет загружены, PI/RDS настроены.'; }
 function renderCheckTiming() {
-    var minutes = APP.connectionType === 'RBD' ? '20-й и 35-й минутах часа' : '10-й и 40-й минутах часа';
-    return 'Рекламные блоки выходят на ' + minutes + ', допустимое отклонение — ' + escapeHtml(getTolerance()) + ', длительность — не более ' + escapeHtml(String(getAdMaxSeconds())) + ' секунд.';
+    return 'График рекламных блоков: ' + escapeHtml(getTimingLabel()) + '. Допустимое отклонение — ' + escapeHtml(getTolerance()) + ', длительность — не более ' + escapeHtml(String(getAdMaxSeconds())) + ' секунд.';
 }
 function renderCheckBranding() { return "\u0412 \u0440\u043E\u043B\u0438\u043A\u0435 \u0438 \u043C\u0430\u043A\u0435\u0442\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u043B\u043E\u0433\u043E\u0442\u0438\u043F ".concat(escapeHtml(APP.launch.frequency || ''), "."); }
 function renderCheckLaunchData() { return 'Дата запуска и телефон рекламной службы указаны.'; }
@@ -1741,7 +1740,10 @@ function normalizeConnectionType(type) {
     return String(type || '').trim().toUpperCase() === 'RBD' ? 'RBD' : 'DTMF';
 }
 function getTimingLabel() {
-    return APP.connectionType === 'RBD' ? '20-я и 35-я минуты часа' : '10-я и 40-я минуты часа';
+    var fromTable = String((APP.connectionData && APP.connectionData.ad_start_time) || '').trim();
+    if (fromTable)
+        return fromTable;
+    return APP.connectionType === 'RBD' ? '20-я и 35-я минуты часа' : '6-я и 37-я минуты часа';
 }
 function getTolerance() {
     return String(APP.connectionData.tolerance || '±3 минуты');
