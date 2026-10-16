@@ -4092,3 +4092,84 @@ body,
   }
 }
 
+
+
+/* ===== CCR RELEASE POLISH 2026-10-16 ===== */
+.launch-desktop-next {
+  display: none;
+}
+
+@media (min-width: 1181px) {
+  /* Air: compact vertical rhythm without changing the content structure. */
+  .air-main > .section {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .air-main > .section:first-child {
+    padding-top: 0;
+  }
+
+  /* Advertising: one clear 2×2 card system. */
+  .ads-composition-grid {
+    align-items: stretch;
+  }
+
+  .ads-item {
+    display: flex;
+    flex-direction: column;
+    min-height: 190px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+
+  .ads-item-spot,
+  .ads-item-layout {
+    background: #fff;
+  }
+
+  .ads-item-logo,
+  .ads-item-rules {
+    background: var(--surface-soft);
+  }
+
+  .ads-item-layout,
+  .ads-item-rules {
+    padding: 24px;
+    border: 1px solid var(--line);
+  }
+
+  .ads-item-action {
+    margin-top: auto;
+    padding-top: 18px;
+  }
+
+  /* Launch data: the next step belongs to the form, not below the taller rail. */
+  .launch-desktop-next {
+    display: block;
+    margin-top: 26px;
+  }
+
+  .launch-desktop-next .button {
+    min-width: 290px;
+  }
+
+  .mobile-flow-footer-to-checklist {
+    display: none;
+  }
+
+  .message-panel {
+    padding: 22px;
+  }
+
+  /* Final check: keep the reference card compact and scannable. */
+  .parameters-panel {
+    padding: 20px 22px;
+  }
+
+  .parameters-list {
+    margin-top: 14px;
+    gap: 10px;
+  }
+}
