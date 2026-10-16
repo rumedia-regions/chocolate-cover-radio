@@ -4173,3 +4173,28 @@ body,
     gap: 10px;
   }
 }
+
+
+/* ===== CCR AIR DESKTOP RHYTHM FIX 2026-10-16 ===== */
+@media (min-width: 1181px) {
+  /* Older desktop rules reserve 68px for the stream row and 30px for an
+     empty copy-status line. Override both only on the air page. */
+  .air-stream-section .stream-row {
+    min-height: 0;
+  }
+
+  .air-stream-section .inline-status:empty {
+    min-height: 0;
+    margin-top: 0;
+  }
+
+  .air-main > .section {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .air-main > .section:first-child {
+    padding-top: 0;
+    padding-bottom: 20px;
+  }
+}
