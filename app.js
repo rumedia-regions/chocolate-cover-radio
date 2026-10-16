@@ -63,7 +63,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 var SESSION_STORAGE_KEY = 'ccr_session_token';
 var LAUNCH_SAVE_DELAY = 700;
 var CHECKLIST_SAVE_DELAY = 350;
-var APP_VERSION = '2.1.0-github';
+var APP_VERSION = '2.2.0-github';
 var APP_VERSION_STORAGE_KEY = 'ccr_app_version_seen';
 var INSTALL_HINT_STORAGE_KEY = 'ccr_install_hint_shown';
 var APP = {
@@ -691,7 +691,7 @@ function mobileBackMarkup() {
 }
 
 function renderMobileFlowFooter(nextPage, nextTitle) {
-    return '<nav class="mobile-flow-footer" aria-label="Следующий шаг">' +
+    return '<nav class="mobile-flow-footer mobile-flow-footer-to-' + escapeAttribute(nextPage) + '" aria-label="Следующий шаг">' +
         '<button class="button button-primary button-full mobile-flow-next" type="button" data-navigate="' + escapeAttribute(nextPage) + '">Далее: ' + escapeHtml(nextTitle) + ' →</button>' +
         '<button class="mobile-flow-home" type="button" data-navigate="home">На главную</button>' +
     '</nav>';
@@ -1124,7 +1124,7 @@ function renderMissingLogo() {
 function renderLaunchData() {
     var content = document.getElementById('pageContent');
     var valid = communicationReady();
-    content.innerHTML = "\n    ".concat(mobileBackMarkup(), "\n    <header class=\"page-head\">\n      <h1 class=\"page-title\">Дата и контакты запуска</h1>\n      <p class=\"page-lead\">Укажите дату запуска и телефон рекламной службы. Данные сохраняются автоматически.</p>\n    </header>\n\n    <div class=\"desktop-grid-7-5 launch-layout\">\n      <div class=\"form-panel\">\n        <p class=\"eyebrow\">").concat(escapeHtml(APP.launch.city || ''), " · ").concat(escapeHtml(APP.launch.frequency || ''), "</p>\n\n        <div class=\"field-group\" style=\"margin-top:24px\">\n          <label class=\"field-label\" for=\"launchDateInput\">Дата запуска</label>\n          <input id=\"launchDateInput\" class=\"text-input\" type=\"date\" value=\"").concat(escapeAttribute(normalizeDateForInput(APP.form.launchDate)), "\">\n          <p class=\"field-help\">Укажите точную дату заранее, чтобы мы успели подготовить анонс.</p>\n          <p id=\"launchDateError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div class=\"field-group\">\n          <label class=\"field-label\" for=\"advertisingPhoneInput\">Телефон рекламной службы</label>\n          <input id=\"advertisingPhoneInput\" class=\"text-input\" type=\"tel\" inputmode=\"tel\" autocomplete=\"tel\" placeholder=\"+7\" value=\"").concat(escapeAttribute(APP.form.advertisingPhone || ''), "\">\n          <p class=\"field-help\">По этому номеру мы подготовим голосовую отбивку для эфира.</p>\n          <p id=\"advertisingPhoneError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div id=\"launchSaveState\" class=\"save-state\" aria-live=\"polite\"></div>\n      </div>\n\n      <aside class=\"message-panel\">\n        <p class=\"eyebrow\">Продублировать менеджеру</p>\n        <p class=\"section-copy optional-copy\">Необязательно. Можно продублировать данные менеджеру в Telegram или по email.</p>\n        <div id=\"messagePreview\" class=\"message-preview\">").concat(escapeHtml(buildLocalMessage()).replace(/\n/g, '<br>'), "</div>\n        <div class=\"communication-actions\">\n          <a id=\"telegramLink\" class=\"link-button link-button-primary is-disabled\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" data-communication=\"telegram\" aria-disabled=\"true\">Написать в Telegram</a>\n          <a id=\"emailLink\" class=\"link-button link-button-secondary is-disabled\" href=\"#\" data-communication=\"email\" aria-disabled=\"true\">Отправить email</a>\n        </div>\n        <p id=\"communicationDisabledNote\" class=\"disabled-note\">").concat(valid ? 'Подготавливаем ссылки…' : 'Ссылки появятся после заполнения даты и телефона.', "</p>\n        <div id=\"communicationError\" class=\"communication-error hidden\"></div>\n        <div id=\"communicationFallback\" class=\"communication-fallback hidden\"></div>\n        <div id=\"communicationCopyStatus\" class=\"inline-status\" aria-live=\"polite\"></div>\n      </aside>\n    </div>");
+    content.innerHTML = "\n    ".concat(mobileBackMarkup(), "\n    <header class=\"page-head\">\n      <h1 class=\"page-title\">Дата и контакты запуска</h1>\n      <p class=\"page-lead\">Укажите дату запуска и номер рекламной службы — эти данные нужны нам для подготовки запуска станции. Данные сохраняются автоматически.</p>\n    </header>\n\n    <div class=\"desktop-grid-7-5 launch-layout\">\n      <div class=\"form-panel\">\n        <p class=\"eyebrow\">").concat(escapeHtml(APP.launch.city || ''), " · ").concat(escapeHtml(APP.launch.frequency || ''), "</p>\n\n        <div class=\"field-group\" style=\"margin-top:24px\">\n          <label class=\"field-label\" for=\"launchDateInput\">Дата запуска</label>\n          <input id=\"launchDateInput\" class=\"text-input\" type=\"date\" value=\"").concat(escapeAttribute(normalizeDateForInput(APP.form.launchDate)), "\">\n          <p class=\"field-help\">Укажите точную дату заранее — она нужна для подготовки анонса запуска.</p>\n          <p id=\"launchDateError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div class=\"field-group\">\n          <label class=\"field-label\" for=\"advertisingPhoneInput\">Телефон рекламной службы</label>\n          <input id=\"advertisingPhoneInput\" class=\"text-input\" type=\"tel\" inputmode=\"tel\" autocomplete=\"tel\" placeholder=\"+7\" value=\"").concat(escapeAttribute(APP.form.advertisingPhone || ''), "\">\n          <p class=\"field-help\">Укажите номер рекламной службы — с ним мы подготовим голосовую отбивку для эфира.</p>\n          <p id=\"advertisingPhoneError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div id=\"launchSaveState\" class=\"save-state\" aria-live=\"polite\"></div>\n        <div class=\"launch-desktop-next\">\n          <button class=\"button button-primary\" type=\"button\" data-navigate=\"checklist\">Далее: Финальная проверка →</button>\n        </div>\n      </div>\n\n      <aside class=\"message-panel\">\n        <p class=\"eyebrow\">Передать данные менеджеру</p>\n        <p class=\"section-copy optional-copy\">После заполнения даты и телефона можно отправить готовые данные менеджеру.</p>\n        <div id=\"messagePreview\" class=\"message-preview\">").concat(escapeHtml(buildLocalMessage()).replace(/\n/g, '<br>'), "</div>\n        <div class=\"communication-actions\">\n          <a id=\"telegramLink\" class=\"link-button link-button-primary is-disabled\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" data-communication=\"telegram\" aria-disabled=\"true\">Отправить в Telegram</a>\n          <a id=\"emailLink\" class=\"link-button link-button-secondary is-disabled\" href=\"#\" data-communication=\"email\" aria-disabled=\"true\">Отправить по email</a>\n        </div>\n        <p id=\"communicationDisabledNote\" class=\"disabled-note\">").concat(valid ? 'Подготавливаем ссылки…' : 'Заполните дату запуска и телефон — после этого данные можно будет отправить.', "</p>\n        <div id=\"communicationError\" class=\"communication-error hidden\"></div>\n        <div id=\"communicationFallback\" class=\"communication-fallback hidden\"></div>\n        <div id=\"communicationCopyStatus\" class=\"inline-status\" aria-live=\"polite\"></div>\n      </aside>\n    </div>");
     updateCommunicationUi();
     if (valid && !APP.communication.loading && (!APP.communication.email || !APP.communication.telegram)) {
         prepareCommunicationLinks();
@@ -1154,9 +1154,12 @@ function renderCheckItem(item) {
     var checked = APP.checklist.has(item.key);
     return "\n    <label class=\"check-item\">\n      <input type=\"checkbox\" data-check-key=\"".concat(escapeAttribute(item.key), "\" ").concat(checked ? 'checked' : '', ">\n      <span class=\"check-box\" aria-hidden=\"true\"></span>\n      <span class=\"check-copy\">").concat(item.render(), "</span>\n    </label>");
 }
-function renderCheckStream() { return 'Основной поток работает, а «Сторож» подключён и готов подхватить эфир.'; }
+function renderCheckStream() { return 'Основной поток работает, «Сторож» подключён и готов подхватить эфир.'; }
 function renderCheckAssets() { return 'Влёт, открывашка и вылет загружены, PI/RDS настроены.'; }
-function renderCheckTiming() { return "\u0420\u0435\u043A\u043B\u0430\u043C\u043D\u044B\u0435 \u0431\u043B\u043E\u043A\u0438 \u0441\u0442\u043E\u044F\u0442 \u043D\u0430 ".concat(escapeHtml(getTimingLabel()), ", \u0434\u043E\u043F\u0443\u0441\u043A ").concat(escapeHtml(getTolerance()), ", \u0434\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u2014 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 ").concat(escapeHtml(String(getAdMaxSeconds())), " \u0441\u0435\u043A\u0443\u043D\u0434."); }
+function renderCheckTiming() {
+    var minutes = APP.connectionType === 'RBD' ? '20-й и 35-й минутах часа' : '10-й и 40-й минутах часа';
+    return 'Рекламные блоки выходят на ' + minutes + ', допустимое отклонение — ' + escapeHtml(getTolerance()) + ', длительность — не более ' + escapeHtml(String(getAdMaxSeconds())) + ' секунд.';
+}
 function renderCheckBranding() { return "\u0412 \u0440\u043E\u043B\u0438\u043A\u0435 \u0438 \u043C\u0430\u043A\u0435\u0442\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u043B\u043E\u0433\u043E\u0442\u0438\u043F ".concat(escapeHtml(APP.launch.frequency || ''), "."); }
 function renderCheckLaunchData() { return 'Дата запуска и телефон рекламной службы указаны.'; }
 /* ---------- PAGE EVENTS ---------- */
@@ -1416,7 +1419,7 @@ function updateCommunicationUi() {
     setLinkState(tg, tgReady ? APP.communication.telegram.url : '#', !!tgReady);
     setLinkState(email, emailReady ? APP.communication.email.url : '#', !!emailReady);
     if (!ready) {
-        note.textContent = 'Сначала укажите дату запуска и телефон рекламной службы.';
+        note.textContent = 'Заполните дату запуска и телефон — после этого данные можно будет отправить.';
     }
     else if (APP.communication.loading) {
         note.textContent = 'Подготавливаем ссылки…';
@@ -1738,7 +1741,7 @@ function normalizeConnectionType(type) {
     return String(type || '').trim().toUpperCase() === 'RBD' ? 'RBD' : 'DTMF';
 }
 function getTimingLabel() {
-    return APP.connectionType === 'RBD' ? '20-я и 35-я минута часа' : '10-я и 40-я минута часа';
+    return APP.connectionType === 'RBD' ? '20-я и 35-я минуты часа' : '10-я и 40-я минуты часа';
 }
 function getTolerance() {
     return String(APP.connectionData.tolerance || '±3 минуты');
