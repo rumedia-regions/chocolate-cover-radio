@@ -63,7 +63,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 var SESSION_STORAGE_KEY = 'ccr_session_token';
 var LAUNCH_SAVE_DELAY = 700;
 var CHECKLIST_SAVE_DELAY = 350;
-var APP_VERSION = '2.0.0-github';
+var APP_VERSION = '2.1.0-github';
 var APP_VERSION_STORAGE_KEY = 'ccr_app_version_seen';
 var INSTALL_HINT_STORAGE_KEY = 'ccr_install_hint_shown';
 var APP = {
@@ -80,6 +80,7 @@ var APP = {
     currentPage: 'home',
     form: { launchDate: '', advertisingPhone: '' },
     checklist: new Set(),
+    completedSteps: new Set(),
     communication: {
         email: null,
         telegram: null,
@@ -568,6 +569,7 @@ function resetRuntimeState() {
     APP.currentPage = 'home';
     APP.form = { launchDate: '', advertisingPhone: '' };
     APP.checklist = new Set();
+    APP.completedSteps = new Set();
     APP.communication = { email: null, telegram: null, loading: false, error: '' };
 }
 /* ---------- LAUNCH SELECTION ---------- */
@@ -723,20 +725,26 @@ function getStepStatus(stepKey) {
         var outro = findFile(['вылет', 'outro']);
         var rds = findFile(['pi/rds', 'pi-rds', 'rds']);
         var guard = findFile(['сторож', 'резервн']);
-        var filesReady = [intro, opening, outro, rds, guard].every(isReadyFile);
-        var done = streamReady && connectionReady && filesReady;
+        var airFiles = [intro, opening, outro, rds, guard];
+        var filesReady = airFiles.every(isReadyFile);
+        var streamCopied = APP.completedSteps.has('action:air_stream');
+        var openedCount = getOpenedFileCount(airFiles);
+        var done = streamReady && connectionReady && filesReady && streamCopied && openedCount === airFiles.length;
         var copy;
-        if (done) {
-            copy = 'Поток, параметры и технические файлы уже подготовлены.';
-        }
-        else if (!streamReady) {
+        if (!streamReady) {
             copy = 'Основной поток пока не добавлен.';
         }
         else if (!connectionReady) {
             copy = 'Параметры подключения ещё не загружены.';
         }
-        else {
+        else if (!filesReady) {
             copy = 'Не весь технический комплект пока доступен.';
+        }
+        else if (done) {
+            copy = 'Поток скопирован, все технические файлы открыты или скачаны.';
+        }
+        else {
+            copy = 'Скопируйте поток и откройте все технические файлы. Выполнено ' + (openedCount + (streamCopied ? 1 : 0)) + ' из ' + (airFiles.length + 1) + ' действий.';
         }
         return { done: done, copy: copy };
     }
@@ -744,33 +752,44 @@ function getStepStatus(stepKey) {
         var mediaKit = findFile(['медиакит', 'media kit', 'mediakit']);
         var brandbook = findFile(['брендбук', 'brandbook']);
         var rules = findLogoRulesFile();
-        var brandDone = isReadyFile(mediaKit) && isReadyFile(brandbook) && isReadyFile(rules);
+        var brandFiles = [mediaKit, brandbook, rules];
+        var brandReady = brandFiles.every(isReadyFile);
+        var brandOpened = getOpenedFileCount(brandFiles);
+        var brandDone = brandReady && brandOpened === brandFiles.length;
         return {
             done: brandDone,
-            copy: brandDone
-                ? 'Media Kit, брендбук и правила использования уже доступны.'
-                : 'Часть материалов станции ещё готовится.'
+            copy: !brandReady
+                ? 'Часть материалов станции ещё готовится.'
+                : brandDone
+                    ? 'Media Kit, брендбук и правила использования открыты.'
+                    : 'Откройте Media Kit, брендбук и правила использования. Открыто ' + brandOpened + ' из ' + brandFiles.length + '.'
         };
     }
     if (stepKey === 'ads') {
         var spot = findFile(['рекламный ролик', 'ролик', '.mp4']);
         var layout = findFile(['рекламный макет', 'макет']);
         var logo = findFrequencyLogo();
-        var adsDone = isReadyFile(spot) && isReadyFile(layout) && isReadyFile(logo);
+        var adFiles = [spot, layout, logo];
+        var adsReady = adFiles.every(isReadyFile);
+        var adsOpened = getOpenedFileCount(adFiles);
+        var adsDone = adsReady && adsOpened === adFiles.length;
         return {
             done: adsDone,
-            copy: adsDone
-                ? 'Ролик, макет и логотип вашей станции уже подготовлены.'
-                : 'Не все рекламные материалы для станции пока доступны.'
+            copy: !adsReady
+                ? 'Не все рекламные материалы для станции пока доступны.'
+                : adsDone
+                    ? 'Ролик, макет и логотип станции открыты или скачаны.'
+                    : 'Откройте ролик, макет и логотип вашей станции. Открыто ' + adsOpened + ' из ' + adFiles.length + '.'
         };
     }
     if (stepKey === 'launch') {
         var dateReady = !!normalizeDateForInput(APP.form.launchDate);
         var phoneReady = !!String(APP.form.advertisingPhone || '').trim();
-        var launchDone = dateReady && phoneReady;
+        var launchSaved = APP.completedSteps.has('step:launch');
+        var launchDone = dateReady && phoneReady && launchSaved;
         var launchCopy;
         if (launchDone) {
-            launchCopy = 'Дата запуска и контакт рекламной службы указаны.';
+            launchCopy = 'Дата запуска и контакт рекламной службы сохранены.';
         }
         else if (!dateReady && !phoneReady) {
             launchCopy = 'Укажите дату запуска и телефон рекламной службы. Телефон понадобится нам для записи голосовой отбивки в эфир.';
@@ -778,8 +797,11 @@ function getStepStatus(stepKey) {
         else if (!dateReady) {
             launchCopy = 'Осталось указать дату запуска.';
         }
-        else {
+        else if (!phoneReady) {
             launchCopy = 'Осталось указать телефон рекламной службы. Мы запишем с ним голосовую отбивку для эфира.';
+        }
+        else {
+            launchCopy = 'Дождитесь сохранения даты и телефона.';
         }
         return { done: launchDone, copy: launchCopy };
     }
@@ -1148,7 +1170,11 @@ function handlePageClick(event) {
     var copyStream = event.target.closest('[data-copy-stream]');
     if (copyStream) {
         copyText(APP.settings.stream_url || '').then(function (ok) {
-            setInlineStatus('streamCopyStatus', ok ? 'Ссылка скопирована' : 'Не удалось скопировать', !ok);
+            setInlineStatus('streamCopyStatus', ok ? 'Ссылка скопирована ✓' : 'Не удалось скопировать', !ok);
+            if (ok) {
+                copyStream.textContent = 'Поток скопирован ✓';
+                markProgressKey('action:air_stream', 'air', 'copy_stream');
+            }
         });
         return;
     }
@@ -1275,8 +1301,10 @@ function saveLaunchDetailsNow() {
                     }
                     saveDraftLocal();
                     setLaunchSaveState('Сохранено', false);
-                    if (communicationReady())
+                    if (communicationReady()) {
+                        markProgressKey('step:launch', 'launch', 'save_launch_details');
                         prepareCommunicationLinks();
+                    }
                     return [3 /*break*/, 4];
                 case 3:
                     error_7 = _a.sent();
@@ -1486,6 +1514,7 @@ function buildLogoRequestMessage() {
 /* ---------- CHECKLIST PERSISTENCE ---------- */
 function restoreChecklist() {
     APP.checklist = new Set();
+    APP.completedSteps = new Set();
     var progress = APP.launchStatus && APP.launchStatus.progress ? APP.launchStatus.progress : {};
     if (!progress.completed_steps)
         return;
@@ -1493,10 +1522,63 @@ function restoreChecklist() {
         var parsed = JSON.parse(progress.completed_steps);
         if (Array.isArray(parsed)) {
             var allowed_1 = CHECK_ITEMS.map(function (item) { return item.key; });
-            parsed.map(String).filter(function (key) { return allowed_1.includes(key); }).forEach(function (key) { APP.checklist.add(key); });
+            parsed.map(String).forEach(function (key) {
+                if (allowed_1.includes(key))
+                    APP.checklist.add(key);
+                else
+                    APP.completedSteps.add(key);
+            });
         }
     }
     catch (_) { }
+}
+function serializeProgress() {
+    var merged = new Set(APP.completedSteps || []);
+    APP.checklist.forEach(function (key) { merged.add(key); });
+    return JSON.stringify(Array.from(merged));
+}
+function markProgressKey(key, currentStep, lastAction) {
+    return __awaiter(this, void 0, void 0, function () {
+        var error_9;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!APP.launch || !key || APP.completedSteps.has(key))
+                        return [2 /*return*/];
+                    APP.completedSteps.add(key);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, authRpc('saveProgress', {
+                            launch_id: APP.launch.launch_id,
+                            current_step: currentStep || APP.currentPage || 'home',
+                            completed_steps: serializeProgress(),
+                            last_action: lastAction || key
+                        })];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_9 = _a.sent();
+                    APP.completedSteps.delete(key);
+                    if (isSessionError(error_9))
+                        return [2 /*return*/];
+                    console.error(error_9);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function fileProgressKey(file) {
+    return file && file.file_id ? 'file:' + String(file.file_id) : '';
+}
+function fileWasOpened(file) {
+    var key = fileProgressKey(file);
+    return !!key && APP.completedSteps.has(key);
+}
+function getOpenedFileCount(files) {
+    return files.filter(function (file) { return fileWasOpened(file); }).length;
 }
 function scheduleChecklistSave() {
     clearTimeout(checklistSaveTimer);
@@ -1521,7 +1603,7 @@ function saveChecklistProgress() {
                     return [4 /*yield*/, authRpc('saveProgress', {
                             launch_id: APP.launch.launch_id,
                             current_step: 'checklist',
-                            completed_steps: JSON.stringify(Array.from(APP.checklist)),
+                            completed_steps: serializeProgress(),
                             last_action: 'checklist'
                         })];
                 case 2:
@@ -1555,7 +1637,8 @@ function renderFileAction(file, label, className) {
         }
         return "<span class=\"text-action\" style=\"color:#999;cursor:not-allowed\">".concat(escapeHtml(label), "</span>");
     }
-    return "<button class=\"".concat(escapeAttribute(className || 'text-action'), "\" type=\"button\" data-file-id=\"").concat(escapeAttribute(file.file_id), "\">").concat(escapeHtml(label), "</button>");
+    var doneLabel = fileWasOpened(file) ? label + ' ✓' : label;
+    return "<button class=\"".concat(escapeAttribute(className || 'text-action'), "\" type=\"button\" data-file-id=\"").concat(escapeAttribute(file.file_id), "\">").concat(escapeHtml(doneLabel), "</button>");
 }
 function renderFileErrorSlot(file) {
     if (!file)
@@ -1583,6 +1666,10 @@ function openFile(fileId, button) {
     }
     else {
         hideFileError(fileId);
+        if (button) {
+            button.textContent = String(button.textContent || '').replace(/\s*✓\s*$/, '') + ' ✓';
+        }
+        markProgressKey(fileProgressKey(file), APP.currentPage, 'open_file:' + String(file.file_id));
     }
 }
 function showFileError(fileId, message) {
