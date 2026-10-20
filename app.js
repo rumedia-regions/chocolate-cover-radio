@@ -63,7 +63,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 var SESSION_STORAGE_KEY = 'ccr_session_token';
 var LAUNCH_SAVE_DELAY = 700;
 var CHECKLIST_SAVE_DELAY = 350;
-var APP_VERSION = '2.3.0-github';
+var APP_VERSION = '2.4.0-github';
 var APP_VERSION_STORAGE_KEY = 'ccr_app_version_seen';
 var INSTALL_HINT_STORAGE_KEY = 'ccr_install_hint_shown';
 var APP = {
@@ -784,24 +784,19 @@ function getStepStatus(stepKey) {
     }
     if (stepKey === 'launch') {
         var dateReady = !!normalizeDateForInput(APP.form.launchDate);
-        var phoneReady = !!String(APP.form.advertisingPhone || '').trim();
         var launchSaved = APP.completedSteps.has('step:launch');
-        var launchDone = dateReady && phoneReady && launchSaved;
+        var launchDone = dateReady && launchSaved;
         var launchCopy;
         if (launchDone) {
-            launchCopy = 'Дата запуска и контакт рекламной службы сохранены.';
-        }
-        else if (!dateReady && !phoneReady) {
-            launchCopy = 'Укажите дату запуска и телефон рекламной службы. Телефон понадобится нам для записи голосовой отбивки в эфир.';
+            launchCopy = APP.form.advertisingPhone
+                ? 'Дата запуска и контакт рекламной службы сохранены.'
+                : 'Дата запуска сохранена. Телефон рекламной службы можно не указывать.';
         }
         else if (!dateReady) {
-            launchCopy = 'Осталось указать дату запуска.';
-        }
-        else if (!phoneReady) {
-            launchCopy = 'Осталось указать телефон рекламной службы. Мы запишем с ним голосовую отбивку для эфира.';
+            launchCopy = 'Укажите точную дату запуска. Телефон рекламной службы — только если у станции есть отдельный номер.';
         }
         else {
-            launchCopy = 'Дождитесь сохранения даты и телефона.';
+            launchCopy = 'Сохраняем дату запуска…';
         }
         return { done: launchDone, copy: launchCopy };
     }
@@ -1124,7 +1119,7 @@ function renderMissingLogo() {
 function renderLaunchData() {
     var content = document.getElementById('pageContent');
     var valid = communicationReady();
-    content.innerHTML = "\n    ".concat(mobileBackMarkup(), "\n    <header class=\"page-head\">\n      <h1 class=\"page-title\">Дата и контакты запуска</h1>\n      <p class=\"page-lead\">Укажите дату запуска и номер рекламной службы — эти данные нужны нам для подготовки запуска станции. Данные сохраняются автоматически.</p>\n    </header>\n\n    <div class=\"desktop-grid-7-5 launch-layout\">\n      <div class=\"form-panel\">\n        <p class=\"eyebrow\">").concat(escapeHtml(APP.launch.city || ''), " · ").concat(escapeHtml(APP.launch.frequency || ''), "</p>\n\n        <div class=\"field-group\" style=\"margin-top:24px\">\n          <label class=\"field-label\" for=\"launchDateInput\">Дата запуска</label>\n          <input id=\"launchDateInput\" class=\"text-input\" type=\"date\" value=\"").concat(escapeAttribute(normalizeDateForInput(APP.form.launchDate)), "\">\n          <p class=\"field-help\">Укажите точную дату заранее — она нужна для подготовки анонса запуска.</p>\n          <p id=\"launchDateError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div class=\"field-group\">\n          <label class=\"field-label\" for=\"advertisingPhoneInput\">Телефон рекламной службы</label>\n          <input id=\"advertisingPhoneInput\" class=\"text-input\" type=\"tel\" inputmode=\"tel\" autocomplete=\"tel\" placeholder=\"+7\" value=\"").concat(escapeAttribute(APP.form.advertisingPhone || ''), "\">\n          <p class=\"field-help\">Укажите номер рекламной службы — с ним мы подготовим голосовую отбивку для эфира.</p>\n          <p id=\"advertisingPhoneError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div id=\"launchSaveState\" class=\"save-state\" aria-live=\"polite\"></div>\n        <div class=\"launch-desktop-next\">\n          <button class=\"button button-primary\" type=\"button\" data-navigate=\"checklist\">Далее: Финальная проверка →</button>\n        </div>\n      </div>\n\n      <aside class=\"message-panel\">\n        <p class=\"eyebrow\">Передать данные менеджеру</p>\n        <p class=\"section-copy optional-copy\">После заполнения даты и телефона можно отправить готовые данные менеджеру.</p>\n        <div id=\"messagePreview\" class=\"message-preview\">").concat(escapeHtml(buildLocalMessage()).replace(/\n/g, '<br>'), "</div>\n        <div class=\"communication-actions\">\n          <a id=\"telegramLink\" class=\"link-button link-button-primary is-disabled\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" data-communication=\"telegram\" aria-disabled=\"true\">Отправить в Telegram</a>\n          <a id=\"emailLink\" class=\"link-button link-button-secondary is-disabled\" href=\"#\" data-communication=\"email\" aria-disabled=\"true\">Отправить по email</a>\n        </div>\n        <p id=\"communicationDisabledNote\" class=\"disabled-note\">").concat(valid ? 'Подготавливаем ссылки…' : 'Заполните дату запуска и телефон — после этого данные можно будет отправить.', "</p>\n        <div id=\"communicationError\" class=\"communication-error hidden\"></div>\n        <div id=\"communicationFallback\" class=\"communication-fallback hidden\"></div>\n        <div id=\"communicationCopyStatus\" class=\"inline-status\" aria-live=\"polite\"></div>\n      </aside>\n    </div>");
+    content.innerHTML = "\n    ".concat(mobileBackMarkup(), "\n    <header class=\"page-head\">\n      <h1 class=\"page-title\">Дата и контакты запуска</h1>\n      <p class=\"page-lead\">Укажите точную дату запуска. Если у станции есть отдельный номер рекламной службы, его тоже можно добавить. Данные сохраняются автоматически.</p>\n    </header>\n\n    <div class=\"desktop-grid-7-5 launch-layout\">\n      <div class=\"form-panel\">\n        <p class=\"eyebrow\">").concat(escapeHtml(APP.launch.city || ''), " · ").concat(escapeHtml(APP.launch.frequency || ''), "</p>\n\n        <div class=\"field-group\" style=\"margin-top:24px\">\n          <label class=\"field-label\" for=\"launchDateInput\">Дата запуска</label>\n          <input id=\"launchDateInput\" class=\"text-input\" type=\"date\" value=\"").concat(escapeAttribute(normalizeDateForInput(APP.form.launchDate)), "\">\n          <p class=\"field-help\">Укажите точную дату заранее — она нужна для подготовки анонса запуска.</p>\n          <p id=\"launchDateError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div class=\"field-group\">\n          <label class=\"field-label\" for=\"advertisingPhoneInput\">Телефон рекламной службы <span class=\"field-label-optional\">— необязательно</span></label>\n          <input id=\"advertisingPhoneInput\" class=\"text-input\" type=\"tel\" inputmode=\"tel\" autocomplete=\"tel\" placeholder=\"+7\" value=\"").concat(escapeAttribute(APP.form.advertisingPhone || ''), "\">\n          <p class=\"field-help\">Если отдельного номера нет, оставьте поле пустым. Если есть — используем его в голосовой отбивке для эфира.</p>\n          <p id=\"advertisingPhoneError\" class=\"field-error hidden\"></p>\n        </div>\n\n        <div id=\"launchSaveState\" class=\"save-state\" aria-live=\"polite\"></div>\n        <div class=\"launch-desktop-next\">\n          <button class=\"button button-primary\" type=\"button\" data-navigate=\"checklist\">Далее: Финальная проверка →</button>\n        </div>\n      </div>\n\n      <aside class=\"message-panel\">\n        <p class=\"eyebrow\">Передать данные менеджеру</p>\n        <p class=\"section-copy optional-copy\">После заполнения даты запуска можно отправить готовые данные менеджеру. Телефон добавится в сообщение, если вы его указали.</p>\n        <div id=\"messagePreview\" class=\"message-preview\">").concat(escapeHtml(buildLocalMessage()).replace(/\n/g, '<br>'), "</div>\n        <div class=\"communication-actions\">\n          <a id=\"telegramLink\" class=\"link-button link-button-primary is-disabled\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" data-communication=\"telegram\" aria-disabled=\"true\">Отправить в Telegram</a>\n          <a id=\"emailLink\" class=\"link-button link-button-secondary is-disabled\" href=\"#\" data-communication=\"email\" aria-disabled=\"true\">Отправить по email</a>\n        </div>\n        <p id=\"communicationDisabledNote\" class=\"disabled-note\">").concat(valid ? 'Подготавливаем ссылки…' : 'Укажите дату запуска — после этого данные можно будет отправить.', "</p>\n        <div id=\"communicationError\" class=\"communication-error hidden\"></div>\n        <div id=\"communicationFallback\" class=\"communication-fallback hidden\"></div>\n        <div id=\"communicationCopyStatus\" class=\"inline-status\" aria-live=\"polite\"></div>\n      </aside>\n    </div>");
     updateCommunicationUi();
     if (valid && !APP.communication.loading && (!APP.communication.email || !APP.communication.telegram)) {
         prepareCommunicationLinks();
@@ -1160,7 +1155,7 @@ function renderCheckTiming() {
     return 'График рекламных блоков: ' + escapeHtml(getTimingLabel()) + '. Допустимое отклонение — ' + escapeHtml(getTolerance()) + ', длительность — не более ' + escapeHtml(String(getAdMaxSeconds())) + ' секунд.';
 }
 function renderCheckBranding() { return "\u0412 \u0440\u043E\u043B\u0438\u043A\u0435 \u0438 \u043C\u0430\u043A\u0435\u0442\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u043B\u043E\u0433\u043E\u0442\u0438\u043F ".concat(escapeHtml(APP.launch.frequency || ''), "."); }
-function renderCheckLaunchData() { return 'Дата запуска и телефон рекламной службы указаны.'; }
+function renderCheckLaunchData() { return APP.form.advertisingPhone ? 'Дата запуска и телефон рекламной службы указаны.' : 'Дата запуска указана. Телефон рекламной службы не обязателен.'; }
 /* ---------- PAGE EVENTS ---------- */
 function handlePageClick(event) {
     var nav = event.target.closest('[data-navigate]');
@@ -1357,7 +1352,7 @@ function restoreLaunchForm() {
 }
 /* ---------- COMMUNICATION ---------- */
 function communicationReady() {
-    return !!normalizeDateForInput(APP.form.launchDate) && !!String(APP.form.advertisingPhone || '').trim();
+    return !!normalizeDateForInput(APP.form.launchDate);
 }
 function invalidateCommunication() {
     communicationRequestId += 1;
@@ -1418,7 +1413,7 @@ function updateCommunicationUi() {
     setLinkState(tg, tgReady ? APP.communication.telegram.url : '#', !!tgReady);
     setLinkState(email, emailReady ? APP.communication.email.url : '#', !!emailReady);
     if (!ready) {
-        note.textContent = 'Заполните дату запуска и телефон — после этого данные можно будет отправить.';
+        note.textContent = 'Укажите дату запуска — после этого данные можно будет отправить.';
     }
     else if (APP.communication.loading) {
         note.textContent = 'Подготавливаем ссылки…';
