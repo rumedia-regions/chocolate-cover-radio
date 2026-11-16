@@ -259,7 +259,7 @@ function openBridgeConnection() {
     setLoadingStatus('Подключаем данные станции…');
     RPC_BRIDGE.channel = makeBridgeChannel();
 
-    RPC_BRIDGE.readyPromise = new Promise(function (resolve, reject) {
+    return new Promise(function (resolve, reject) {
         RPC_BRIDGE.readyResolve = resolve;
         RPC_BRIDGE.readyReject = reject;
 
@@ -298,13 +298,14 @@ function ensureBridgeReady() {
 
     // One automatic retry for a slow or interrupted Apps Script iframe.
     // Each attempt gets a fresh iframe and channel; failed attempts are removed.
-    return openBridgeConnection().catch(function (error) {
+    RPC_BRIDGE.readyPromise = openBridgeConnection().catch(function (error) {
         if (/Не удалось подключиться к серверу/.test(String(error && error.message || error))) {
             return new Promise(function (resolve) { setTimeout(resolve, 1200); })
                 .then(function () { return openBridgeConnection(); });
         }
         throw error;
     });
+    return RPC_BRIDGE.readyPromise;
 }
 
 function rpc(functionName) {
