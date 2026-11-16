@@ -1,10 +1,10 @@
-const CACHE_NAME = 'chocolate-cover-radio-v8';
+const CACHE_NAME = 'chocolate-cover-radio-v9';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css?v=6',
-  './app.js?v=7',
+  './app.js?v=8',
   './manifest.webmanifest',
   './apple-touch-icon.png',
   './icon-192.png',
@@ -64,19 +64,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first for versioned app assets: never serve stale JS/CSS while online.
   event.respondWith(
-    caches.match(request).then(cached => {
-      const network = fetch(request)
-        .then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || network;
-    })
+    fetch(request).then(response => {
+      if (response && response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
+      }
+      return response;
+    }).catch(() => caches.match(request))
   );
 });
