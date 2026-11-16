@@ -242,58 +242,69 @@ function bindBridgeMessages() {
     });
 }
 
-function ensureBridgeReady() {
-    if (RPC_BRIDGE.ready) {
-        return Promise.resolve(true);
+function resetBridgeConnection() {
+    RPC_BRIDGE.ready = false;
+    RPC_BRIDGE.targetWindow = null;
+    RPC_BRIDGE.readyPromise = null;
+    RPC_BRIDGE.readyResolve = null;
+    RPC_BRIDGE.readyReject = null;
+    if (RPC_BRIDGE.frame) {
+        RPC_BRIDGE.frame.remove();
+        RPC_BRIDGE.frame = null;
     }
+}
 
-    if (RPC_BRIDGE.readyPromise) {
-        return RPC_BRIDGE.readyPromise;
-    }
-
+function openBridgeConnection() {
     bindBridgeMessages();
     setLoadingStatus('Подключаем данные станции…');
-
     RPC_BRIDGE.channel = makeBridgeChannel();
 
     RPC_BRIDGE.readyPromise = new Promise(function (resolve, reject) {
         RPC_BRIDGE.readyResolve = resolve;
         RPC_BRIDGE.readyReject = reject;
 
+        var baseUrl;
+        try {
+            baseUrl = getBridgeBaseUrl();
+        } catch (error) {
+            resetBridgeConnection();
+            reject(error);
+            return;
+        }
+
         var frame = document.createElement('iframe');
         frame.id = 'rpcBridge';
         frame.title = 'Служебное подключение';
         frame.setAttribute('aria-hidden', 'true');
         frame.tabIndex = -1;
-
-        var baseUrl;
-        try {
-            baseUrl = getBridgeBaseUrl();
-        }
-        catch (error) {
-            reject(error);
-            return;
-        }
-
-        frame.src =
-            baseUrl +
-            '?bridge=1&channel=' +
-            encodeURIComponent(RPC_BRIDGE.channel);
-
+        frame.src = baseUrl + '?bridge=1&channel=' + encodeURIComponent(RPC_BRIDGE.channel);
         RPC_BRIDGE.frame = frame;
         document.body.appendChild(frame);
 
+        var channel = RPC_BRIDGE.channel;
         setTimeout(function () {
-            if (!RPC_BRIDGE.ready) {
-                RPC_BRIDGE.readyPromise = null;
-                RPC_BRIDGE.readyResolve = null;
-                RPC_BRIDGE.readyReject = null;
-                reject(new Error('Не удалось подключиться к серверу. Проверьте адрес сервера и попробуйте снова.'));
+            if (RPC_BRIDGE.channel === channel && !RPC_BRIDGE.ready) {
+                resetBridgeConnection();
+                reject(new Error('Не удалось подключиться к серверу. Попробуйте ещё раз.'));
             }
         }, 20000);
     });
-
     return RPC_BRIDGE.readyPromise;
+}
+
+function ensureBridgeReady() {
+    if (RPC_BRIDGE.ready) return Promise.resolve(true);
+    if (RPC_BRIDGE.readyPromise) return RPC_BRIDGE.readyPromise;
+
+    // One automatic retry for a slow or interrupted Apps Script iframe.
+    // Each attempt gets a fresh iframe and channel; failed attempts are removed.
+    return openBridgeConnection().catch(function (error) {
+        if (/Не удалось подключиться к серверу/.test(String(error && error.message || error))) {
+            return new Promise(function (resolve) { setTimeout(resolve, 1200); })
+                .then(function () { return openBridgeConnection(); });
+        }
+        throw error;
+    });
 }
 
 function rpc(functionName) {
@@ -2126,6 +2137,20 @@ function registerServiceWorker() {
             .register('./sw.js', { scope: './' })
             .then(function (registration) {
                 registration.update().catch(function () {});
+                // Refresh only on the login screen, never during an active session
+                // or while a password is being entered.
+                var hadController = !!navigator.serviceWorker.controller;
+                var refreshed = false;
+                navigator.serviceWorker.addEventListener('controllerchange', function () {
+                    if (!hadController || refreshed) return;
+                    var login = document.getElementById('loginScreen');
+                    var password = document.querySelector('input[type="password"]');
+                    if (login && !login.classList.contains('hidden') &&
+                        (!password || !password.value)) {
+                        refreshed = true;
+                        window.location.reload();
+                    }
+                });
             })
             .catch(function (error) {
                 console.warn('Service worker registration failed', error);
